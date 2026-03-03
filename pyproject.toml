@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gql_in_python"
+version = "0.0.1"
+description = "Write GraphQL queries using Python syntax via AST transformation."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "blankyet"}
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/blankyet/gql-in-python"

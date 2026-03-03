@@ -1,7 +1,7 @@
 from collections import UserDict
 from typing import Any
-from .gql_types import FieldEnum, Variable, FieldString
-from .gql_list import FieldList
+from .types import FieldEnum, Variable, FieldString
+from .list import FieldList
 
 class FieldArguments(UserDict[Any, Any]):
     """helper class to represent nested dict with {} curly brakets
