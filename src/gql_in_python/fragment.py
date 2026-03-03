@@ -1,4 +1,4 @@
-from .gql_list import FieldNames
+from .list import FieldNames
 
 
 class Fragment:
@@ -8,6 +8,8 @@ class Fragment:
         self.fields = None
 
     def __getitem__(self, selections):
+        if not isinstance(selections, (tuple, list)):
+            selections = [selections]
         self.fields = FieldNames(selections)
         return self
 

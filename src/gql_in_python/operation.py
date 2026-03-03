@@ -1,5 +1,5 @@
 
-from .gql_types import Variable
+from .types import Variable
 from .field import Field
 
 
