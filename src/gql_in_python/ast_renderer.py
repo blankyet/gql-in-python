@@ -1,11 +1,8 @@
 import ast
 import inspect
 import textwrap
-from types import EllipsisType
 from gql_in_python.fragment import Fragment
-from gql_in_python.list import FieldNames
 from gql_in_python.types import Variable
-import typing
 from gql_in_python.field import Field
 from gql_in_python.operation import Operation
 
@@ -44,7 +41,11 @@ def gql(fn: int):
 
             def visit_Call(self, node):
                 field = Field(node.func.id)
-                return field({kw.arg: self.visit(kw.value) for kw in node.keywords})
+                if len(node.args) > 0 and isinstance(node.args[0], ast.Dict):
+                    field = field(self.visit(node.args[0]))
+                else:
+                    field= field({kw.arg: self.visit(kw.value) for kw in node.keywords})
+                return field
 
 
             def visit_Tuple(self, node):
@@ -107,21 +108,24 @@ def gql(fn: int):
             print(expr_res)
             print("------")
             
-            if str(expr_res[0]) in ["query", "mutation", "subscription"]:
-                operation = Operation(root_name="Next_parsed",
+            if isinstance(expr_res, list) and str(expr_res[0]) in ["query", "mutation", "subscription"]:
+                operation = Operation(root_name=None,
                         operation_name=expr_res[1],
                         operation_type=expr_res[0] 
                     )
                 prev_op = operation
-            elif str(expr_res[0]) == "fragment":
+            elif isinstance(expr_res, list) and str(expr_res[0]) == "fragment":
                 fragment = Fragment(name=expr_res[1], type_name=expr_res[3])
                 prev_op = fragment
                 fragments.append(fragment)
-            elif isinstance(expr_res, Field):
-                prev_op[expr_res]
-            elif isinstance(expr_res[0], Field):
+            elif isinstance(expr_res, list) and isinstance(expr_res[0], Field):
                 if prev_op is not None:
                     prev_op[expr_res]
+                    if isinstance(prev_op, Operation):
+                        prev_op = expr_res[0]
+            elif isinstance(expr_res, Field):
+                prev_op[expr_res]
+                prev_op = expr_res
             elif isinstance(expr_res[0], list):
                 if isinstance(expr_res[0][0], Field):
                     if prev_op is not None:
@@ -135,3 +139,14 @@ def gql(fn: int):
         return str(operation)
 
     return wrapper
+
+
+def transform(query):
+    import re
+    query = re.sub(r'\b(\w+)\b(?![:(,)])', r'\1,', query)
+    query = query.replace("}", "},")
+
+    query = query.replace("(", "({")
+    query = query.replace(")", "}),")
+
+    return query
