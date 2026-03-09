@@ -1,4 +1,13 @@
 from gql_in_python.ast_renderer import gql
+from graphql import parse
+
+
+def validate_graphql(query: str) -> None:
+    """Validate a GraphQL query is syntactically valid."""
+    try:
+        parse(query)
+    except Exception as e:
+        raise AssertionError(f"GraphQL parsing failed: {e}")
 
 
 class TestGqlDecorator:
@@ -7,11 +16,13 @@ class TestGqlDecorator:
     def test_simple_field_query(self):
         """Test a simple field query."""
         @gql
-        def query():
+        def TestQuery():
             user()
 
-        result = str(query())
-        assert "query query  { user }" == result
+        result = str(TestQuery())
+        expected = "query TestQuery {user}"
+        assert expected == result
+        validate_graphql(result)
 
     def test_field_with_argument(self):
         """Test field with an argument."""
@@ -20,19 +31,23 @@ class TestGqlDecorator:
             user(id=123)
 
         result = str(TestQuery())
-        assert "query TestQuery  { user(id: 123) }" == result
+        expected = "query TestQuery {user(id: 123)}"
+        assert expected == result
+        validate_graphql(result)
 
     def test_field_with_subselection(self):
         """Test field with subselection using set literal."""
         @gql
         def TestQuery():
-            user()
+            user,
             {
                 name,
                 email
             }
         result = str(TestQuery())
-        assert "query TestQuery  { user { name email } }" == result
+        expected = "query TestQuery {user { name email }}"
+        assert expected == result
+        validate_graphql(result)
 
     def test_query_explicit(self):
         @gql
@@ -45,7 +60,9 @@ class TestGqlDecorator:
             }
         
         result = str(TestQuery("pokemon"))
-        assert 'query TestQuery  { pokemon(name: "pokemon") { classification name id } }' == result
+        expected = 'query TestQuery {pokemon(name: "pokemon") { classification name id }}'
+        assert expected == result
+        validate_graphql(result)
 
     def test_subscription_explicit(self):
         @gql
@@ -61,12 +78,14 @@ class TestGqlDecorator:
             }
         
         result = str(TestQuery("pokemon"))
-        assert 'subscription PokemonsSub  { pokemon(name: {_in: "pokemon"}) { classification name id } }' == result
-
+        expected = 'subscription PokemonsSub {pokemon(name: {_in: "pokemon"}) { classification name id }}'
+        assert expected == result
+        validate_graphql(result)
 
     def test_hero_with_fragment(self):
+        """Test hero comparison with fragments showcasing complex nested structures."""
         @gql
-        def HeroComparison(First: "Int" = 3): 
+        def HeroComparison(First: "Int" = 3):
             {
                 {leftComparison: hero(episode=EMPIRE)}, {
                     ...,comparisonFields,
@@ -89,9 +108,10 @@ class TestGqlDecorator:
                     }
                 }
             }
+
         result = str(HeroComparison(1))
 
-        assert """
-query HeroComparison  { leftComparison: hero(episode: EMPIRE) { ...comparisonFields } rightComparison: hero(episode: JEDI) { ...comparisonFields } }
-fragment comparisonFields on Character { name friendsConnection(first: 1) { totalCount edges { node { name } } } }
-        """.strip() == result.strip()
+        expected = """query HeroComparison { leftComparison: hero(episode: EMPIRE) { ...comparisonFields } rightComparison: hero(episode: JEDI) { ...comparisonFields } }
+fragment comparisonFields on Character { name friendsConnection(first: 1) { totalCount edges { node { name } } } }"""
+        assert expected == result.strip()
+        validate_graphql(result)

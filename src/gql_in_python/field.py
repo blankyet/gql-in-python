@@ -50,8 +50,10 @@ class Field:
 
         if self.arguments and self.fields:
             return f"{display_name}({self.arguments.compile()}) {{{self.fields}}}"
-        elif self.fields:
+        elif self.fields and display_name:
             return f"{display_name} {{{self.fields}}}"
+        elif self.fields:
+            return f"{self.fields}"
         elif self.arguments:
             return f"{display_name}({self.arguments.compile()})"
 

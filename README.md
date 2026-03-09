@@ -10,18 +10,14 @@ I tried to make GraphQL look like Python and...
 
 ```python
 @gql
-def TestQuery(Name: str):
-    subscription, PokemonsSub,
+def GetHero():
+    hero, 
     {
-        pokemon({name: {_in: Name}}),
-        {
-            classification,
-            name,
-            id,
-        }
+        name,
+        appearsIn,
     }
 
-print(TestQuery("pokemon"))
+print(GetHero())
 ```
 </td>
 
@@ -30,11 +26,78 @@ print(TestQuery("pokemon"))
 
 ``` GraphQL
 
-subscription PokemonsSub {
-  pokemon(name: {_in: "pokemon"}) {
-    classification
+query GetHero {
+  hero {
     name
-    id
+    appearsIn
+  }
+}
+```
+</td>
+</tr>
+</table>
+
+<table>
+<tr>
+<th width="50%">Python</th>
+<th width="50%">GraphQL</th>
+</tr>
+<tr>
+<td>
+
+```python
+@gql
+def HeroComparison(First: "Int" = 3):
+    {
+        {leftComparison: hero(episode=EMPIRE)}, {
+            ...,comparisonFields,
+        },
+        {rightComparison: hero(episode=JEDI)}, {
+            ...,comparisonFields,
+        }
+    },
+
+    fragment, comparisonFields, on, Character,
+
+    {
+        name,
+        friendsConnection(first=First), {
+            totalCount,
+            edges, {
+            node, {
+                name
+            },
+            }
+        }
+    }
+
+result = str(HeroComparison(1))
+```
+</td>
+
+
+<td>
+
+``` GraphQL
+
+query HeroComparison {
+  leftComparison: hero(episode: EMPIRE) {
+    ...comparisonFields
+  }
+  rightComparison: hero(episode: JEDI) {
+    ...comparisonFields
+  }
+}
+
+fragment comparisonFields on Character {
+  name
+  friendsConnection(first: 1) {
+    totalCount
+    edges {
+      node {
+        name
+      }
+    }
   }
 }
 ```

@@ -62,7 +62,7 @@ class TestVariable:
         """Test Variable representation."""
         var = Variable("id")
         # Variable str() returns the data without $, repr() adds $
-        assert str(var) == "id"
+        assert str(var) == "$id"
         assert repr(var) == "$id"
 
     def test_variable_define(self):

@@ -99,14 +99,11 @@ def gql(fn: int):
         results = []
         parser = GQLParser()
 
-        operation = Operation(root_name=None, operation_name=fn.__name__, operation_type="query")
+        operation = Operation(root_name="", operation_name=fn.__name__, operation_type="query")
         prev_op = operation
         fragments = []
         for i, node in enumerate(body):
             expr_res = parser.visit(node)
-            print(operation)
-            print(expr_res)
-            print("------")
             
             if isinstance(expr_res, list) and str(expr_res[0]) in ["query", "mutation", "subscription"]:
                 operation = Operation(root_name=None,
@@ -120,12 +117,18 @@ def gql(fn: int):
                 fragments.append(fragment)
             elif isinstance(expr_res, list) and isinstance(expr_res[0], Field):
                 if prev_op is not None:
-                    prev_op[expr_res]
+     
                     if isinstance(prev_op, Operation):
+                        prev_op.root = expr_res[0]
                         prev_op = expr_res[0]
+                    else:
+                        prev_op[expr_res]
             elif isinstance(expr_res, Field):
-                prev_op[expr_res]
-                prev_op = expr_res
+                if isinstance(prev_op, Operation):
+                    prev_op.root = expr_res
+                    prev_op = expr_res
+                else:
+                    prev_op[expr_res]
             elif isinstance(expr_res[0], list):
                 if isinstance(expr_res[0][0], Field):
                     if prev_op is not None:

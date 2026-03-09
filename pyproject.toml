@@ -12,7 +12,7 @@ license = {text = "MIT"}
 authors = [
     {name = "blankyet"}
 ]
-dependencies = []
+dependencies = ["graphql-core>=3.2.0"]
 
 [project.urls]
 Homepage = "https://github.com/blankyet/gql-in-python"

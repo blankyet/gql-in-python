@@ -11,99 +11,94 @@ class TestField:
         """Test basic field without arguments or subfields."""
         field = Field("name")
         result = str(field)
-        assert "name" in result
+        expected = "name"
+        assert expected == result
 
     def test_field_with_arguments(self):
         """Test field with arguments."""
         field = Field("hero")
         field(id=123)
         result = str(field)
-        assert "hero" in result
-        assert "id: 123" in result
+        expected = "hero(id: 123)"
+        assert expected == result
 
     def test_field_with_string_argument(self):
         """Test field with string argument."""
         field = Field("hero")
         field(id="123")
         result = str(field)
-        assert 'hero' in result
-        assert '"123"' in result or "123" in result
+        expected = 'hero(id: "123")'
+        assert expected == result
 
     def test_field_with_multiple_arguments(self):
         """Test field with multiple arguments."""
         field = Field("hero")
         field(id=123, episode="EMPIRE")
         result = str(field)
-        assert "hero" in result
-        assert "id: 123" in result
-        assert "episode: EMPIRE" in result
+        expected = "hero(id: 123, episode: EMPIRE)"
+        assert expected == result
 
     def test_field_with_nested_dict_arguments(self):
         """Test field with nested dict arguments."""
         field = Field("hero")
         field(where={"id": 123})
         result = str(field)
-        assert "hero" in result
-        assert "where" in result
-        assert "id" in result
+        expected = "hero(where: {id: 123})"
+        assert expected == result
 
     def test_field_with_subfields(self):
         """Test field with subfield selection."""
         field = Field("hero")
         field["name", "height"]
         result = str(field)
-        assert "hero" in result
-        assert "name" in result
-        assert "height" in result
-        # Should have nested structure with braces
-        assert "{" in result and "}" in result
+        expected = "hero { name height }"
+        assert expected == result
 
     def test_field_with_arguments_and_subfields(self):
         """Test field with both arguments and subfields."""
         field = Field("hero")
         field(id=123)["name", "height"]
         result = str(field)
-        assert "hero" in result
-        assert "id: 123" in result
-        assert "name" in result
-        assert "height" in result
+        expected = "hero(id: 123) { name height }"
+        assert expected == result
 
     def test_field_alias(self):
         """Test field with alias."""
         field = Field("hero").alias("empireHero")
         result = str(field)
-        assert "empireHero: hero" in result
+        expected = "empireHero: hero"
+        assert expected == result
 
     def test_field_alias_with_arguments(self):
         """Test field with alias and arguments."""
         field = Field("hero").alias("empireHero")
         field(episode="EMPIRE")
         result = str(field)
-        assert "empireHero: hero" in result
-        assert "episode: EMPIRE" in result
+        expected = "empireHero: hero(episode: EMPIRE)"
+        assert expected == result
 
     def test_field_alias_with_subfields(self):
         """Test field with alias and subfields."""
         field = Field("hero").alias("empireHero")
         field["name"]
         result = str(field)
-        assert "empireHero: hero" in result
-        assert "name" in result
+        expected = "empireHero: hero { name }"
+        assert expected == result
 
     def test_field_chaining(self):
         """Test chaining field calls."""
         field = Field("hero")(id=123)["name"]
         result = str(field)
-        assert "hero" in result
-        assert "id: 123" in result
-        assert "name" in result
+        expected = "hero(id: 123) { name }"
+        assert expected == result
 
     def test_field_with_enum(self):
         """Test field with enum argument."""
         field = Field("hero")
         field(episode=FieldEnum("EMPIRE"))
         result = str(field)
-        assert "EMPIRE" in result
+        expected = "hero(episode: EMPIRE)"
+        assert expected == result
         # Enum should not be quoted
         assert '"EMPIRE"' not in result
 
@@ -112,22 +107,28 @@ class TestField:
         field = Field("hero")
         field(id=Variable("$id"))
         result = str(field)
-        assert "$id" in result
+        expected = "hero(id: $$id)"
+        assert expected == result
 
     def test_field_with_list_subfields(self):
         """Test field with list of subfields."""
         field = Field("hero")
         field["name", "height", "appearsIn"]
         result = str(field)
-        assert all(f in result for f in ["name", "height", "appearsIn"])
+        # Check all fields are present
+        assert "name" in result
+        assert "height" in result
+        assert "appearsIn" in result
+        assert "hero" in result
+        # Verify it's a selection set
+        assert "{" in result and "}" in result
 
     def test_field_repr(self):
         """Test field __repr__."""
         field = Field("hero", {"id": 123}, ["name"])
         result = repr(field)
-        assert "hero" in result
-        assert "id" in result
-        assert "name" in result
+        expected = "hero(id: 123) { name }"
+        assert expected == result
 
 
 class TestFieldEdgeCases:
@@ -138,14 +139,16 @@ class TestFieldEdgeCases:
         field = Field("hero")
         field({})
         result = str(field)
-        assert result == "hero"
+        expected = "hero"
+        assert expected == result
 
     def test_field_with_none_value(self):
         """Test field with None argument (should be ignored)."""
         field = Field("hero")
         field(id=None)
         result = str(field)
-        assert result == "hero"
+        expected = "hero"
+        assert expected == result
 
     def test_field_with_mixed_call_patterns(self):
         """Test mixing __call__ patterns - last call overwrites."""
@@ -155,17 +158,16 @@ class TestFieldEdgeCases:
         # Then with kwargs - overwrites previous arguments
         field(episode="EMPIRE")
         result = str(field)
-        # Only the last call's arguments remain
-        assert "episode: EMPIRE" in result
-        assert "id" not in result
+        expected = "hero(episode: EMPIRE)"
+        assert expected == result
 
     def test_field_with_nested_field_subselection(self):
         """Test field with nested field as subselection."""
         inner = Field("name")
         outer = Field("hero")[inner]
         result = str(outer)
-        assert "hero" in result
-        assert "name" in result
+        expected = "hero { name }"
+        assert expected == result
 
     def test_field_with_dict_alias_in_subfields(self):
         """Test using dict for alias in subfield selection."""
@@ -174,5 +176,5 @@ class TestFieldEdgeCases:
             {"jediHero": Field("hero")(episode="JEDI")["name"]}
         ]
         result = str(field)
-        assert "empireHero: hero" in result
-        assert "jediHero: hero" in result
+        expected = "query { empireHero: hero(episode: EMPIRE) { name } jediHero: hero(episode: JEDI) { name } }"
+        assert expected == result

@@ -12,11 +12,9 @@ class TestFragment:
         frag = Fragment("comparisonFields", "Character")
         frag["name", "appearsIn"]
         result = str(frag)
-        # Fragment __str__ only shows name (like ...comparisonFields)
-        assert "comparisonFields" in result
+        expected = "...comparisonFields"
+        assert expected == result
         # Type name and fields are in definition(), not str()
-        assert "Character" not in result
-        # Fields are not in str() representation
 
     def test_fragment_with_nested_fields(self):
         """Test fragment with nested fields."""
@@ -24,7 +22,8 @@ class TestFragment:
         frag["name", Field("friends")["name"]]
         result = str(frag)
         # str() only shows fragment name, not fields
-        assert "comparisonFields" in result
+        expected = "...comparisonFields"
+        assert expected == result
         # Fields are in definition()
         definition = frag.definition()
         assert "friends" in definition
@@ -35,14 +34,15 @@ class TestFragment:
         frag = Fragment("comparisonFields", "Character")
         frag["name"]
         definition = frag.definition()
-        assert "fragment comparisonFields on Character" in definition
-        assert "name" in definition
+        expected = "fragment comparisonFields on Character { name }"
+        assert expected == definition
 
     def test_fragment_repr(self):
         """Test fragment __repr__."""
         frag = Fragment("test", "Type")
         result = repr(frag)
-        assert "...test" in result
+        expected = "...test"
+        assert expected == result
 
     def test_fragment_with_multiple_fields(self):
         """Test fragment with many fields."""
@@ -50,10 +50,12 @@ class TestFragment:
         frag["id", "name", "email", "age"]
         result = str(frag)
         # str() only shows fragment name
-        assert "allFields" in result
+        expected = "...allFields"
+        assert expected == result
         # Fields are in definition()
         definition = frag.definition()
-        assert all(field in definition for field in ["id", "name", "email", "age"])
+        expected_def = "fragment allFields on User { id name email age }"
+        assert expected_def == definition
 
     def test_fragment_in_operation(self):
         """Test fragment used within an operation."""
@@ -67,8 +69,8 @@ class TestFragment:
             {"right": Field("hero")(episode="JEDI")[comparison_fields]}
         ]
         result = str(op)
-        assert "fragment comparisonFields on Character" in result
-        assert "HeroComparison" in result or "HeroComparison" in result
+        expected = "query HeroComparison {HeroComparison { left: hero(episode: EMPIRE) { ...comparisonFields } right: hero(episode: JEDI) { ...comparisonFields } }}\nfragment comparisonFields on Character { name appearsIn }"
+        assert expected == result
 
 
 class TestFragmentEdgeCases:
@@ -78,7 +80,8 @@ class TestFragmentEdgeCases:
         """Test fragment with no fields selected."""
         frag = Fragment("empty", "Type")
         result = str(frag)
-        assert "empty" in result
+        expected = "...empty"
+        assert expected == result
 
     def test_fragment_with_complex_type_name(self):
         """Test fragment with complex type name (e.g., union, interface)."""
@@ -86,14 +89,17 @@ class TestFragmentEdgeCases:
         frag["name"]
         result = str(frag)
         # str() shows fragment name only
-        assert "onUnion" in result
+        expected = "...onUnion"
+        assert expected == result
         # Type name is in definition()
         definition = frag.definition()
-        assert "UnionType" in definition
+        expected_def = "fragment onUnion on UnionType { name }"
+        assert expected_def == definition
 
     def test_fragment_name_with_underscores(self):
         """Test fragment with underscores in name."""
         frag = Fragment("my_custom_fragment", "MyType")
         frag["field"]
         result = str(frag)
-        assert "my_custom_fragment" in result
+        expected = "...my_custom_fragment"
+        assert expected == result

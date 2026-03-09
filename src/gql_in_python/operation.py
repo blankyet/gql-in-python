@@ -29,7 +29,7 @@ class Operation:
         )
         header_args = f"({var_defs})" if var_defs else ""
 
-        query = f"{self.operation_type} {self.operation_name}{header_args} {self.root}"
+        query = f"{self.operation_type} {self.operation_name}{header_args} {{{self.root}}}"
 
         fragments = self.fragments or self.root._find_fragments(self.root)
         frag_defs = "\n".join([f.definition() for f in fragments])
