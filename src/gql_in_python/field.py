@@ -27,7 +27,10 @@ class Field:
     def _find_fragments(self, field_obj, found=None):
         if found is None:
             found = set()
-        
+
+        if not field_obj.fields:
+            return set()
+
         # Iterate through the FieldNames (UserList)
         for item in field_obj.fields:
             if isinstance(item, Fragment):
@@ -43,12 +46,14 @@ class Field:
     def __repr__(self):
         # Handle Alias (label: name)
         display_name = f"{self.label}: {self.name}" if getattr(self, "label", None) else self.name
-        
+        display_name = display_name or ""
+
         if self.arguments and self.fields:
             return f"{display_name}({self.arguments.compile()}) {{{self.fields}}}"
         elif self.fields:
             return f"{display_name} {{{self.fields}}}"
         elif self.arguments:
             return f"{display_name}({self.arguments.compile()})"
+
         return display_name
         

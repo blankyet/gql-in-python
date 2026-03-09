@@ -29,7 +29,8 @@ class FieldArguments(UserDict[Any, Any]):
             value = FieldArguments(value)
         elif isinstance(value, list):
             value = FieldList(value)
-
+        elif isinstance(value, Variable):
+            value = value
         elif isinstance(value, str):
             if value.isupper():
                 value = FieldEnum(value)

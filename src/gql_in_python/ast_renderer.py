@@ -1,0 +1,137 @@
+import ast
+import inspect
+import textwrap
+from types import EllipsisType
+from gql_in_python.fragment import Fragment
+from gql_in_python.list import FieldNames
+from gql_in_python.types import Variable
+import typing
+from gql_in_python.field import Field
+from gql_in_python.operation import Operation
+
+
+def gql(fn: int):
+
+    def wrapper(*args, **kwargs):
+        source = inspect.getsource(fn)
+        sig = inspect.signature(fn)
+        bound = sig.bind_partial(*args, **kwargs)
+        
+        # 2. Iterate through all defined parameters
+        args_dict = {}
+        variables  = {}
+        for name, param in sig.parameters.items():
+            # If user provided it, use it; otherwise, use your custom default
+            if name in bound.arguments:
+                args_dict[name] = bound.arguments[name]
+            else:
+                args_dict[name] = Variable(name)
+                variables[name] = param.annotation
+
+        source = "\n".join(line for line in source.splitlines() if "@gql" not in line)
+        source = textwrap.dedent(source)
+        tree = ast.parse(source)
+
+        class GQLParser(ast.NodeVisitor):
+            def visit_Name(self, node):
+                if node.id in args_dict:
+                    return args_dict[node.id]
+                return Field(node.id)
+
+            def visit_Expr(self, node):
+                # This unwraps the line and returns the Field/Set result
+                return self.visit(node.value)
+
+            def visit_Call(self, node):
+                field = Field(node.func.id)
+                return field({kw.arg: self.visit(kw.value) for kw in node.keywords})
+
+
+            def visit_Tuple(self, node):
+                return [self.visit(e) for e in node.elts]
+
+            def visit_List(self, node):
+                return [self.visit(e) for e in node.elts]
+
+            def visit_Dict(self, node):
+                # Dicts inside Calls are data; otherwise they are selections
+                data = {
+                    self.visit(k): self.visit(v) for k, v in zip(node.keys, node.values)
+                }
+                return data
+
+            def visit_Set(self, node):
+                elements = node.elts
+                results = []
+                i = 0
+                while i < len(elements):
+                    current_val = self.visit(elements[i])
+
+                    if current_val is Ellipsis:
+                        if i + 1 < len(elements) and isinstance(elements[i + 1], ast.Name):
+                            current_val = Fragment(name=self.visit(elements[i + 1]), type_name="")
+                            i += 1
+                    if isinstance(current_val, dict):
+                        alias, field = next(iter(current_val.items()))
+                        field.alias(alias.name)
+                        current_val = field
+                    # Look ahead within the set for a nested block
+                    if i + 1 < len(elements) and isinstance(elements[i + 1], ast.Set):
+                        children = self.visit(elements[i + 1])
+
+                        current_val[children]
+                        i += 1  # Consume the nested set
+
+                    results.append(current_val)
+                    i += 1
+                return results
+
+            def visit_Constant(self, node):
+
+                return node.value
+
+        # target = tree.body[0].body[-1]
+        # target_node = target.value if hasattr(target, "value") else target
+        # result = GQLParser().visit(target_nodevisit)
+        # return str(result[0] if isinstance(result, list) else result)
+        body = tree.body[0].body
+        results = []
+        parser = GQLParser()
+
+        operation = Operation(root_name=None, operation_name=fn.__name__, operation_type="query")
+        prev_op = operation
+        fragments = []
+        for i, node in enumerate(body):
+            expr_res = parser.visit(node)
+            print(operation)
+            print(expr_res)
+            print("------")
+            
+            if str(expr_res[0]) in ["query", "mutation", "subscription"]:
+                operation = Operation(root_name="Next_parsed",
+                        operation_name=expr_res[1],
+                        operation_type=expr_res[0] 
+                    )
+                prev_op = operation
+            elif str(expr_res[0]) == "fragment":
+                fragment = Fragment(name=expr_res[1], type_name=expr_res[3])
+                prev_op = fragment
+                fragments.append(fragment)
+            elif isinstance(expr_res, Field):
+                prev_op[expr_res]
+            elif isinstance(expr_res[0], Field):
+                if prev_op is not None:
+                    prev_op[expr_res]
+            elif isinstance(expr_res[0], list):
+                if isinstance(expr_res[0][0], Field):
+                    if prev_op is not None:
+                        prev_op[expr_res[0]]
+            
+        
+        operation.vars = variables
+        operation.fragments = fragments
+
+
+        return str(operation)
+
+    return wrapper

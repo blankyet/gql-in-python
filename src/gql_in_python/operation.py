@@ -10,6 +10,7 @@ class Operation:
         self.root = Field(root_name, None, None)
         self.arguments = None
         self.fields = None
+        self.fragments = None
         self.vars = vars or {} # {"id": "ID!"}
 
     def __call__(self, args_dict=None, **arguments: dict) -> "Field":
@@ -28,10 +29,9 @@ class Operation:
         )
         header_args = f"({var_defs})" if var_defs else ""
 
-        
         query = f"{self.operation_type} {self.operation_name}{header_args} {{{self.root}}}"
 
-        fragments = self.root._find_fragments(self.root)
+        fragments = self.fragments or self.root._find_fragments(self.root)
         frag_defs = "\n".join([f.definition() for f in fragments])
         
         return f"{query}\n{frag_defs}".strip()
