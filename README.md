@@ -212,8 +212,9 @@ def transform_to_gql(query):
 
     return query
 ```
+The library technically supports variables (both Python and GraphQL style) and fragments, but it still lacks many features.
 
-well while library even supports variables, be it python or grapqhl and fragments it still lacks many features. dont use it in production
+Dont use it in production.
 
 # todo:
 - Add pretty-print
