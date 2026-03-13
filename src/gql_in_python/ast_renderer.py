@@ -144,7 +144,7 @@ def gql(fn: int):
     return wrapper
 
 
-def transform(query):
+def transform_to_gql(query):
     import re
     query = re.sub(r'\b(\w+)\b(?![:(,)])', r'\1,', query)
     query = query.replace("}", "},")
