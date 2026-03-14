@@ -1,13 +1,15 @@
 import ast
 import inspect
 import textwrap
+from gql_in_python.directive import Directive
 from gql_in_python.fragment import Fragment
+from gql_in_python.list import FieldNames
 from gql_in_python.types import Variable
 from gql_in_python.field import Field
 from gql_in_python.operation import Operation
 
 
-def gql(fn: int):
+def gql(fn):
 
     def wrapper(*args, **kwargs):
         source = inspect.getsource(fn)
@@ -60,6 +62,24 @@ def gql(fn: int):
                     self.visit(k): self.visit(v) for k, v in zip(node.keys, node.values)
                 }
                 return data
+            
+            def visit_BinOp(self, node):
+                # left most is a field everythin else is a directive
+                active_node = node
+                directives = []
+                while (isinstance(active_node.left, ast.BinOp)
+                       and isinstance(active_node.left.op, ast.MatMult)):
+                    field = self.visit(active_node.right)
+                    directives.append(Directive(field.name, field.arguments, field.fields))
+                    active_node = active_node.left
+                
+                field = self.visit(active_node.left)
+                if (hasattr(active_node, "right")):
+                    field_dir = self.visit(active_node.right)
+                    directives.append(Directive(field_dir.name, field_dir.arguments, field_dir.fields))
+            
+                return [field, *directives[::-1]]
+
 
             def visit_Set(self, node):
                 elements = node.elts
@@ -76,6 +96,10 @@ def gql(fn: int):
                         alias, field = next(iter(current_val.items()))
                         field.alias(alias.name)
                         current_val = field
+                    if isinstance(current_val, list):
+                        last = current_val.pop()
+                        results.extend(current_val)
+                        current_val = last
                     # Look ahead within the set for a nested block
                     if i + 1 < len(elements) and isinstance(elements[i + 1], ast.Set):
                         children = self.visit(elements[i + 1])
@@ -107,7 +131,7 @@ def gql(fn: int):
             
             if isinstance(expr_res, list) and str(expr_res[0]) in ["query", "mutation", "subscription"]:
                 operation = Operation(root_name=None,
-                        operation_name=expr_res[1],
+                        operation_name=FieldNames(expr_res[1]),
                         operation_type=expr_res[0] 
                     )
                 prev_op = operation

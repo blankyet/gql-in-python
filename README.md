@@ -60,15 +60,15 @@ def HeroComparison(First: "Int" = 3):
     fragment, comparisonFields, on, Character,
 
     {
-        name,
-        friendsConnection(first=First), {
-            totalCount,
-            edges, {
+      name,
+      friendsConnection(first=First), {
+          totalCount,
+          edges, {
             node, {
                 name
-            },
-            }
-        }
+              },
+          }
+      }
     }
 
 result = str(HeroComparison(1))
@@ -150,7 +150,7 @@ But it is still closer to Python than to GraphQL. So I went further down the rab
 
 With one small class we can remove Field("Name") and also remove the need for quotes.
 
-```
+``` python
 class Namespace:
     def __getattr__(self, name):
         return Field(name)
@@ -218,6 +218,5 @@ Dont use it in production.
 
 # todo:
 - Add pretty-print
-- Add directives support (@include, @skip)
 - Refactor complex AST parsing logic
 - transform_to_gql - only works with simple queries

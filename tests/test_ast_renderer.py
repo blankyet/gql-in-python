@@ -115,3 +115,24 @@ class TestGqlDecorator:
 fragment comparisonFields on Character { name friendsConnection(first: 1) { totalCount edges { node { name } } } }"""
         assert expected == result.strip()
         validate_graphql(result)
+
+
+    def test_directives(self):
+        @gql
+        def TestQuery(Name: str):
+            subscription, PokemonsSub @ directive({where: none})
+            {
+                pokemon({name: {_in: Name}}),
+                {
+                    classification @skip({why: {_in: [1, 2]}}) @include, {
+                        all
+                    },
+                    name,
+                    id,
+                }
+            }
+        
+        result = str(TestQuery("pokemon"))
+        expected = 'subscription  PokemonsSub @directive(where: none)  {pokemon(name: {_in: "pokemon"}) { classification @skip(why: {_in: [1, 2]}) @include { all } name id }}'
+        assert expected == result
+        validate_graphql(result)
